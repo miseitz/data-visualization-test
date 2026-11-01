@@ -271,7 +271,7 @@ function render() {
   const r = selectedRows();
   $("company-name").textContent = d.name;
   $("data-range").textContent = `Data from ${d.start} to ${d.end} · showing ${rangeStart()} to ${d.end}`;
-  $("footer").textContent = `Data rebuilt ${new Date(d.generated_at).toLocaleString()} · ${d.daily.date.length.toLocaleString()} days of data`;
+  $("footer").textContent = `Data last updated ${new Date(d.generated_at).toLocaleString()} · ${d.daily.date.length.toLocaleString()} days of data · this page checks for new data every ${REFRESH_MINUTES} minutes`;
   renderKpis();
   renderRevSpend(r);
   renderNet(r);
@@ -297,6 +297,26 @@ async function loadCompany(id) {
   render();
 }
 
+// Open tabs check for freshly published data every few minutes and redraw
+// only if the data was rebuilt. Filters and range stay as the viewer set them.
+const REFRESH_MINUTES = 10;
+
+async function checkForUpdate() {
+  if (!state.data || document.hidden) return;
+  try {
+    const res = await fetch(`data/${state.data.id}.json`, { cache: "no-cache" });
+    if (!res.ok) return;
+    const fresh = await res.json();
+    if (fresh.generated_at !== state.data.generated_at) {
+      state.data = fresh;
+      renderInsights();
+      render();
+    }
+  } catch {
+    /* offline or a deploy in progress: try again next time */
+  }
+}
+
 async function init() {
   try {
     state.index = await (await fetch("data/index.json", { cache: "no-cache" })).json();
@@ -317,6 +337,9 @@ async function init() {
   // Re-draw charts with the right colors when the OS switches light/dark
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => state.data && render());
   await loadCompany(companies[0].id);
+  setInterval(checkForUpdate, REFRESH_MINUTES * 60 * 1000);
+  // Also check right away when someone returns to a tab that was in the background
+  document.addEventListener("visibilitychange", () => !document.hidden && checkForUpdate());
 }
 
 init();
