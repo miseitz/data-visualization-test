@@ -103,6 +103,40 @@ The KPI tiles at the top of the page are recalculated in the browser for the sel
 
 To add an insight, append another dictionary to the list in `compute_insights()` (`title`, `value`, `detail`, `tone` = `good` / `warning` / `critical` / `neutral`). It shows up on the page automatically.
 
-## Next step: data from an API
+## Hourly updates from an API
 
-Replace the CSV reading with an API call in a new script (e.g. `scripts/fetch_api.py`) that appends new rows to the CSV, store the API key as a repository secret (**Settings → Secrets and variables → Actions**), and uncomment the `schedule:` block in `.github/workflows/deploy.yml`. The rest of the pipeline stays the same.
+The workflow already runs **every hour** (and on every push). Each run:
+
+1. `scripts/fetch_api.py` asks the API for the last few days and merges them into the CSV (new days are added, existing days are replaced by newer values).
+2. If anything changed, the updated CSV is committed back to the repository, so the CSV is the permanent history.
+3. `scripts/build_data.py` rebuilds the charts' data and insights, and the site is redeployed.
+
+Open dashboard tabs check for new data every 10 minutes and redraw automatically.
+
+Until the API is switched on in `config.json`, step 1 does nothing and the dashboard simply keeps showing the CSV data.
+
+### Switching it on
+
+1. **Store the key as a secret** (never put it in a file in the repository): on GitHub, go to **Settings → Secrets and variables → Actions → New repository secret**, Name: `COMPANY_API_KEY`, Secret: your key → **Add secret**.
+2. **Adapt `scripts/fetch_api.py`** to your API. Only the two functions marked `ADAPT` normally need changes:
+   - `request_data()`: how the key is sent (e.g. `Authorization: Bearer …` or `X-API-Key: …`) and the date parameters
+   - `parse_response()`: which fields in the API's response are date, revenue, spending and visits
+3. **Edit `config.json`**: set `"url"` to the API address and `"enabled": true`.
+4. Commit. Then **Actions → Build and deploy dashboard → Run workflow** to test straight away, and open the run's log: the "Fetch new data from the API" step shows how many rows were received.
+
+### Testing locally first (e.g. in Spyder)
+
+```python
+import os
+os.environ["COMPANY_API_KEY"] = "your-key"   # type this in the console; don't save it in a file
+```
+
+Then run `scripts/fetch_api.py` (F5) and check the end of `data/raw/example_company.csv`. Run `scripts/serve.py` to see the dashboard.
+
+### Good to know
+
+- **If the API is down** or the key is wrong, the run shows a yellow warning, keeps the last good data and still publishes the site.
+- **Timing:** GitHub starts scheduled runs on a best-effort basis, often a few minutes late, occasionally more. Fine for hourly; not for minute-by-minute.
+- **Change the frequency** with the `cron:` line in `.github/workflows/deploy.yml`, e.g. `"17 */3 * * *"` for every 3 hours, `"17 6 * * *"` for daily at 06:17 UTC.
+- **Cost:** free. Public repositories have unlimited Actions minutes; private ones get 2,000 free minutes per month on the Free plan. Each run has two jobs that are each billed as at least 1 minute, so hourly runs use roughly 1,500 minutes/month, which fits, but leaves little room. In a private repo, every 2–3 hours is the safer choice.
+- **Inactivity:** GitHub pauses scheduled workflows in public repositories after 60 days without any repository activity. The workflow's own data commits should keep it active; if GitHub ever pauses it anyway, you get an email and can re-enable it with one click in the Actions tab.

@@ -10,6 +10,12 @@
         "revenue": "Revenue",
         "spending": "Spending",
         "visits": "Daily App Visits"
+      },
+      "api": {
+        "enabled": false,
+        "url": "https://api.example.com/v1/company/metrics",
+        "key_secret": "COMPANY_API_KEY",
+        "days_back": 7
       }
     }
   ]
