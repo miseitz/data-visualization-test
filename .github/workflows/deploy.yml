@@ -1,19 +1,27 @@
-# Builds the dashboard data from the CSVs and publishes the site to GitHub Pages.
+# Fetches new data from the API (if enabled in config.json), rebuilds the
+# dashboard data and publishes the site to GitHub Pages.
+#
+# Runs:
+#   - every hour (GitHub may start it a few minutes late)
+#   - on every push to main/master
+#   - by hand: Actions tab -> "Build and deploy dashboard" -> Run workflow
 name: Build and deploy dashboard
 
 on:
+  schedule:
+    - cron: "17 * * * *"   # minute 17 of every hour (UTC); avoids the busy :00 slot
   push:
     branches: [main, master]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write    # needed to save the updated CSV back to the repository
   pages: write
   id-token: write
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false   # let a running update finish instead of cancelling it
 
 jobs:
   build:
@@ -28,6 +36,26 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Fetch new data from the API
+        env:
+          # Repository secret (Settings -> Secrets and variables -> Actions).
+          # The name must match "key_secret" in config.json.
+          COMPANY_API_KEY: ${{ secrets.COMPANY_API_KEY }}
+        run: python scripts/fetch_api.py
+
+      - name: Save updated CSV to the repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/raw
+          if git diff --cached --quiet; then
+            echo "No new data."
+          else
+            git commit -m "Update data from API"
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
 
       - name: Build dashboard data (CSV -> JSON + insights)
         run: python scripts/build_data.py
