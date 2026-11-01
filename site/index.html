@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Company Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <div>
+      <h1 id="company-name">Company dashboard</h1>
+      <p class="sub" id="data-range">Loading data…</p>
+    </div>
+    <label class="company-picker" id="company-picker" hidden>
+      <span>Company</span>
+      <select id="company-select"></select>
+    </label>
+  </header>
+
+  <div class="controls" role="toolbar" aria-label="Chart filters">
+    <div class="seg" role="radiogroup" aria-label="Time range" id="range-group">
+      <button data-range="365" role="radio">1Y</button>
+      <button data-range="730" role="radio">2Y</button>
+      <button data-range="1095" role="radio">3Y</button>
+      <button data-range="all" role="radio" aria-checked="true">All</button>
+    </div>
+    <div class="seg" role="radiogroup" aria-label="Granularity" id="gran-group">
+      <button data-gran="daily" role="radio">Daily</button>
+      <button data-gran="weekly" role="radio">Weekly</button>
+      <button data-gran="monthly" role="radio" aria-checked="true">Monthly</button>
+    </div>
+  </div>
+
+  <section class="kpis" id="kpis" aria-label="Key figures for the selected range"></section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Revenue vs spending</h2>
+      <p class="note" id="note-revspend"></p>
+    </div>
+    <div class="chart" id="chart-revspend"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Net result (revenue − spending)</h2>
+      <p class="note" id="note-net"></p>
+    </div>
+    <div class="chart" id="chart-net"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Daily app visits</h2>
+      <p class="note" id="note-visits"></p>
+    </div>
+    <div class="chart" id="chart-visits"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Insights</h2>
+      <p class="note">Computed over the full dataset each time the data is rebuilt.</p>
+    </div>
+    <div class="insights" id="insights"></div>
+  </section>
+
+  <section class="card">
+    <details id="table-details">
+      <summary>
+        <h2>Data table</h2>
+        <span class="note">Values for the selected range and granularity</span>
+      </summary>
+      <div class="table-actions"><button id="download-csv" class="btn">Download as CSV</button></div>
+      <div class="table-wrap"><table id="data-table"></table></div>
+    </details>
+  </section>
+
+  <footer class="foot" id="footer"></footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

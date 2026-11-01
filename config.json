@@ -1,0 +1,16 @@
+{
+  "companies": [
+    {
+      "id": "example-company",
+      "name": "Example Company AG",
+      "file": "data/raw/example_company.csv",
+      "currency": "CHF",
+      "columns": {
+        "date": "Date",
+        "revenue": "Revenue",
+        "spending": "Spending",
+        "visits": "Daily App Visits"
+      }
+    }
+  ]
+}
